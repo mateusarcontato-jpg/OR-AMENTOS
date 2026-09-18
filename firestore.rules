@@ -1,0 +1,9 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /quotes/{quoteId} {
+      // Permite leitura e escrita de orçamentos para a equipe de T.I
+      allow read, write: if true;
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Gerador de Orçamentos T.I",
+  "description": "Sistema para equipes de T.I preencherem requisições e orçamentos de equipamentos com links de compra, verificação de estoque e geração de PDF profissional.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
