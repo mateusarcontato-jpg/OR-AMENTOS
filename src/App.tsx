@@ -6,7 +6,8 @@ import {
   Layers, 
   Store, 
   CheckCircle2, 
-  ExternalLink
+  FolderClock,
+  Save
 } from 'lucide-react';
 import { BudgetQuote } from './types';
 import { INITIAL_QUOTE } from './data/initialData';
@@ -14,6 +15,7 @@ import { Header } from './components/Header';
 import { QuoteForm } from './components/QuoteForm';
 import { ItemsManager } from './components/ItemsManager';
 import { DocumentPreview } from './components/DocumentPreview';
+import { SavedQuotesView } from './components/SavedQuotesView';
 import { PresetsModal } from './components/PresetsModal';
 import { HistoryModal } from './components/HistoryModal';
 import { generateQuotePDF } from './utils/pdfGenerator';
@@ -28,11 +30,12 @@ import {
 export default function App() {
   const [quotes, setQuotes] = useState<BudgetQuote[]>([INITIAL_QUOTE]);
   const [activeQuoteId, setActiveQuoteId] = useState<string>(INITIAL_QUOTE.id);
-  const [activeTab, setActiveTab] = useState<'editor' | 'preview'>('editor');
+  const [activeTab, setActiveTab] = useState<'editor' | 'saved' | 'preview'>('editor');
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
   const [showSaveToast, setShowSaveToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('Salvo no Firebase!');
+  const [isSaving, setIsSaving] = useState(false);
 
   // Active quote object
   const currentQuote = quotes.find((q) => q.id === activeQuoteId) || quotes[0] || INITIAL_QUOTE;
@@ -99,6 +102,20 @@ export default function App() {
       prev.map((q) => (q.id === currentQuote.id ? updated : q))
     );
     saveToCloud(updated);
+  };
+
+  // Explicit Save Quote Button Action
+  const handleSaveQuoteExplicitly = async () => {
+    setIsSaving(true);
+    try {
+      await saveQuoteToFirestore(currentQuote);
+      triggerSaveToast('Orçamento salvo com sucesso no Firebase!');
+    } catch (e) {
+      console.warn('Error saving to Firestore:', e);
+      triggerSaveToast('Salvo em cache local!');
+    } finally {
+      setTimeout(() => setIsSaving(false), 450);
+    }
   };
 
   // Create new blank quote
@@ -173,13 +190,16 @@ export default function App() {
 
   // Delete quote
   const handleDeleteQuote = async (id: string) => {
-    if (quotes.length <= 1) return;
+    if (quotes.length <= 1) {
+      triggerSaveToast('Não é possível excluir o único orçamento ativo.');
+      return;
+    }
     const filtered = quotes.filter((q) => q.id !== id);
     setQuotes(filtered);
     if (activeQuoteId === id) {
       setActiveQuoteId(filtered[0].id);
     }
-    triggerSaveToast('Orçamento removido!');
+    triggerSaveToast('Orçamento removido do Firebase!');
     try {
       await deleteQuoteFromFirestore(id);
     } catch (e) {
@@ -195,8 +215,8 @@ export default function App() {
   };
 
   // PDF Generation
-  const handleGeneratePDF = () => {
-    generateQuotePDF(currentQuote);
+  const handleGeneratePDF = (targetQuote?: BudgetQuote) => {
+    generateQuotePDF(targetQuote || currentQuote);
     triggerSaveToast('PDF gerado com sucesso!');
   };
 
@@ -216,9 +236,12 @@ export default function App() {
       {/* Top Header */}
       <Header
         quote={currentQuote}
+        savedQuotesCount={quotes.length}
+        isSaving={isSaving}
+        onSaveQuote={handleSaveQuoteExplicitly}
         onNewQuote={handleNewQuote}
-        onOpenHistory={() => setIsHistoryOpen(true)}
-        onGeneratePDF={handleGeneratePDF}
+        onOpenHistory={() => setActiveTab('saved')}
+        onGeneratePDF={() => handleGeneratePDF(currentQuote)}
         onPrint={handlePrint}
         onOpenPresets={() => setIsPresetsOpen(true)}
       />
@@ -226,15 +249,17 @@ export default function App() {
       {/* Main Workspace */}
       <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-5 space-y-4">
         
-        {/* Clean Segmented Tab Control */}
+        {/* Clean Segmented Tab Control with Orçamentos Salvos */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pb-2 border-b border-zinc-800/80">
           
-          <div className="flex items-center gap-1 bg-[#12141c] p-1 rounded-lg border border-zinc-800 w-full sm:w-auto">
+          <div className="flex items-center gap-1 bg-[#12141c] p-1 rounded-lg border border-zinc-800 w-full sm:w-auto overflow-x-auto">
+            
+            {/* Guia 1: Formulário & Itens */}
             <button
               id="tab-editor"
               type="button"
               onClick={() => setActiveTab('editor')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
                 activeTab === 'editor'
                   ? 'bg-zinc-800 text-white shadow-xs font-semibold'
                   : 'text-zinc-400 hover:text-white'
@@ -244,11 +269,32 @@ export default function App() {
               <span>Formulário & Itens</span>
             </button>
 
+            {/* Guia 2: Orçamentos Salvos (SOLICITADO PELO USUÁRIO) */}
+            <button
+              id="tab-saved"
+              type="button"
+              onClick={() => setActiveTab('saved')}
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
+                activeTab === 'saved'
+                  ? 'bg-zinc-800 text-white shadow-xs font-semibold'
+                  : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              <FolderClock className="w-3.5 h-3.5 text-zinc-400" />
+              <span>Orçamentos Salvos</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${
+                activeTab === 'saved' ? 'bg-red-600 text-white' : 'bg-zinc-800 text-zinc-300'
+              }`}>
+                {quotes.length}
+              </span>
+            </button>
+
+            {/* Guia 3: Folha A4 / Visualização */}
             <button
               id="tab-preview"
               type="button"
               onClick={() => setActiveTab('preview')}
-              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-1.5 rounded-md text-xs font-medium transition cursor-pointer ${
+              className={`flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap ${
                 activeTab === 'preview'
                   ? 'bg-zinc-800 text-white shadow-xs font-semibold'
                   : 'text-zinc-400 hover:text-white'
@@ -276,10 +322,12 @@ export default function App() {
         {/* Tab 1: Form & Items Manager */}
         {activeTab === 'editor' && (
           <div className="space-y-4 animate-fade-in">
-            {/* Meta details Form */}
+            {/* Meta details Form with explicit Save button */}
             <QuoteForm
               quote={currentQuote}
               onChange={handleUpdateCurrentQuote}
+              onSave={handleSaveQuoteExplicitly}
+              isSaving={isSaving}
             />
 
             {/* Items with Links & Stock Manager */}
@@ -290,12 +338,34 @@ export default function App() {
           </div>
         )}
 
-        {/* Tab 2: Document A4 Preview */}
+        {/* Tab 2: Saved Quotes Explorer (SOLICITADO PELO USUÁRIO) */}
+        {activeTab === 'saved' && (
+          <SavedQuotesView
+            quotes={quotes}
+            activeQuoteId={activeQuoteId}
+            onSelectQuote={(q) => setActiveQuoteId(q.id)}
+            onOpenEditorForQuote={(q) => {
+              setActiveQuoteId(q.id);
+              setActiveTab('editor');
+            }}
+            onOpenPreviewForQuote={(q) => {
+              setActiveQuoteId(q.id);
+              setActiveTab('preview');
+            }}
+            onDeleteQuote={handleDeleteQuote}
+            onDuplicateQuote={handleDuplicateQuote}
+            onNewQuote={handleNewQuote}
+            onOpenPresets={() => setIsPresetsOpen(true)}
+            onGeneratePDF={(q) => handleGeneratePDF(q)}
+          />
+        )}
+
+        {/* Tab 3: Document A4 Preview */}
         {activeTab === 'preview' && (
           <div className="animate-fade-in">
             <DocumentPreview
               quote={currentQuote}
-              onDownloadPDF={handleGeneratePDF}
+              onDownloadPDF={() => handleGeneratePDF(currentQuote)}
               onPrint={handlePrint}
             />
           </div>
@@ -325,6 +395,31 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2">
+            
+            {/* Botão de Salvar Orçamento no rodapé */}
+            <button
+              id="btn-footer-save-quote"
+              type="button"
+              onClick={handleSaveQuoteExplicitly}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition cursor-pointer disabled:opacity-60"
+              title="Salvar orçamento atual agora"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{isSaving ? 'Salvando...' : 'Salvar Orçamento'}</span>
+            </button>
+
+            {activeTab !== 'saved' && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('saved')}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 transition cursor-pointer"
+              >
+                <FolderClock className="w-3.5 h-3.5 text-zinc-400" />
+                <span>Ver Salvos ({quotes.length})</span>
+              </button>
+            )}
+
             {activeTab === 'editor' ? (
               <button
                 type="button"
@@ -334,7 +429,7 @@ export default function App() {
                 <Eye className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Ver Folha</span>
               </button>
-            ) : (
+            ) : activeTab === 'preview' ? (
               <button
                 type="button"
                 onClick={() => setActiveTab('editor')}
@@ -343,13 +438,13 @@ export default function App() {
                 <Layers className="w-3.5 h-3.5 text-zinc-400" />
                 <span>Editar Dados</span>
               </button>
-            )}
+            ) : null}
 
             <button
               id="btn-quick-generate-pdf"
               type="button"
-              onClick={handleGeneratePDF}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-sm transition cursor-pointer"
+              onClick={() => handleGeneratePDF(currentQuote)}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-red-600 hover:bg-red-500 text-white shadow-xs transition cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Gerar PDF</span>
@@ -366,17 +461,21 @@ export default function App() {
         onSelectPreset={(newQuote) => {
           setQuotes((prev) => [newQuote, ...prev]);
           setActiveQuoteId(newQuote.id);
+          setActiveTab('editor');
           triggerSaveToast('Modelo carregado com sucesso!');
         }}
       />
 
-      {/* History Modal */}
+      {/* History Modal (também acessível) */}
       <HistoryModal
         isOpen={isHistoryOpen}
         onClose={() => setIsHistoryOpen(false)}
         savedQuotes={quotes}
         activeQuoteId={activeQuoteId}
-        onSelectQuote={(q) => setActiveQuoteId(q.id)}
+        onSelectQuote={(q) => {
+          setActiveQuoteId(q.id);
+          setActiveTab('editor');
+        }}
         onDeleteQuote={handleDeleteQuote}
         onDuplicateQuote={handleDuplicateQuote}
         onNewQuote={handleNewQuote}

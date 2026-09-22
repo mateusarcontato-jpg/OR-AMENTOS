@@ -8,16 +8,19 @@ import {
   AlertTriangle, 
   Tag, 
   HelpCircle,
-  Hash
+  Hash,
+  Save
 } from 'lucide-react';
 import { BudgetQuote, UrgencyLevel } from '../types';
 
 interface QuoteFormProps {
   quote: BudgetQuote;
   onChange: (updated: Partial<BudgetQuote>) => void;
+  onSave?: () => void;
+  isSaving?: boolean;
 }
 
-export const QuoteForm: React.FC<QuoteFormProps> = ({ quote, onChange }) => {
+export const QuoteForm: React.FC<QuoteFormProps> = ({ quote, onChange, onSave, isSaving }) => {
   return (
     <div className="bg-[#111217] border border-zinc-800/80 rounded-xl p-5">
       
@@ -37,10 +40,27 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({ quote, onChange }) => {
           </div>
         </div>
 
-        {/* Number pill */}
-        <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
-          <Hash className="w-3 h-3 text-red-500" />
-          <span>{quote.quoteNumber}</span>
+        {/* Header Actions */}
+        <div className="flex items-center gap-2">
+          {onSave && (
+            <button
+              id="btn-form-save-quote"
+              type="button"
+              onClick={onSave}
+              disabled={isSaving}
+              className="flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition cursor-pointer"
+              title="Salvar este orçamento no Firebase"
+            >
+              <Save className="w-3.5 h-3.5" />
+              <span>{isSaving ? 'Salvando...' : 'Salvar'}</span>
+            </button>
+          )}
+
+          {/* Number pill */}
+          <div className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-zinc-900 border border-zinc-800 text-[11px] font-mono text-zinc-300">
+            <Hash className="w-3 h-3 text-red-500" />
+            <span>{quote.quoteNumber}</span>
+          </div>
         </div>
       </div>
 
