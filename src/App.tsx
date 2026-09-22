@@ -104,12 +104,74 @@ export default function App() {
     saveToCloud(updated);
   };
 
-  // Explicit Save Quote Button Action
+  // Helper to generate a fresh blank quote (preserving company & requester identity)
+  const createNewBlankQuote = (reference?: BudgetQuote): BudgetQuote => ({
+    id: `quote-${Date.now()}`,
+    quoteNumber: generateQuoteId(),
+    title: '',
+    requesterName: reference?.requesterName || '',
+    department: reference?.department || 'T.I / Suporte',
+    approverBoss: reference?.approverBoss || '',
+    date: getTodayDateString(),
+    urgency: 'media',
+    status: 'rascunho',
+    companyName: reference?.companyName || '',
+    ticketNumber: '',
+    justification: '',
+    observations: '',
+    createdAt: Date.now(),
+    items: [
+      {
+        id: `item-${Date.now()}-1`,
+        name: '',
+        category: 'Hardware & Peças',
+        hasInStock: false,
+        stockQuantity: 0,
+        quantityNeeded: 1,
+        quantityToBuy: 1,
+        unitPrice: 0,
+        purchaseUrl: '',
+        supplier: '',
+        notes: '',
+      },
+    ],
+  });
+
+  // Explicit Save Quote Button Action: saves current quote, then resets form for a new quote
   const handleSaveQuoteExplicitly = async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
     setIsSaving(true);
+    const quoteToArchive = { ...currentQuote };
+
     try {
-      await saveQuoteToFirestore(currentQuote);
-      triggerSaveToast('Orçamento salvo com sucesso no Firebase!');
+      // 1. Salva o orçamento preenchido no Firestore
+      await saveQuoteToFirestore(quoteToArchive);
+
+      // 2. Gera um novo orçamento totalmente limpo em branco
+      const newBlankQuote = createNewBlankQuote(quoteToArchive);
+
+      // 3. Atualiza a lista mantendo o que acabou de ser salvo e ativando o novo em branco
+      setQuotes((prev) => {
+        const withoutCurrent = prev.filter((q) => q.id !== quoteToArchive.id);
+        return [newBlankQuote, quoteToArchive, ...withoutCurrent];
+      });
+
+      // 4. Zera o formulário na tela
+      setActiveQuoteId(newBlankQuote.id);
+      setActiveTab('editor');
+
+      // 5. Notificação de sucesso
+      triggerSaveToast('Orçamento salvo! Formulário zerado para o próximo.');
+
+      // 6. Registra o novo em branco no Firestore
+      try {
+        await saveQuoteToFirestore(newBlankQuote);
+      } catch (err) {
+        console.warn('Silent save for new blank quote error:', err);
+      }
     } catch (e) {
       console.warn('Error saving to Firestore:', e);
       triggerSaveToast('Salvo em cache local!');
@@ -120,37 +182,7 @@ export default function App() {
 
   // Create new blank quote
   const handleNewQuote = async () => {
-    const newQuote: BudgetQuote = {
-      id: `quote-${Date.now()}`,
-      quoteNumber: generateQuoteId(),
-      title: '',
-      requesterName: currentQuote.requesterName || '',
-      department: currentQuote.department || 'T.I / Suporte',
-      approverBoss: currentQuote.approverBoss || '',
-      date: getTodayDateString(),
-      urgency: 'media',
-      status: 'rascunho',
-      companyName: currentQuote.companyName || '',
-      ticketNumber: '',
-      justification: '',
-      observations: '',
-      createdAt: Date.now(),
-      items: [
-        {
-          id: `item-${Date.now()}-1`,
-          name: '',
-          category: 'Hardware & Peças',
-          hasInStock: false,
-          stockQuantity: 0,
-          quantityNeeded: 1,
-          quantityToBuy: 1,
-          unitPrice: 0,
-          purchaseUrl: '',
-          supplier: '',
-          notes: '',
-        },
-      ],
-    };
+    const newQuote = createNewBlankQuote(currentQuote);
 
     setQuotes((prev) => [newQuote, ...prev]);
     setActiveQuoteId(newQuote.id);
