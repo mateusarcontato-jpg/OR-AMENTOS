@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, X, ArrowRight, Check } from 'lucide-react';
+import { Sparkles, X, ArrowRight } from 'lucide-react';
 import { QUOTE_PRESETS } from '../data/initialData';
 import { BudgetQuote } from '../types';
 import { generateQuoteId, getTodayDateString } from '../utils/formatters';
@@ -44,69 +44,60 @@ export const PresetsModal: React.FC<PresetsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
-      <div className="bg-[#140b0e] border border-red-900/60 w-full max-w-xl rounded-2xl p-6 shadow-2xl shadow-red-950/40 relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fade-in">
+      <div className="bg-[#111217] border border-zinc-800 w-full max-w-xl rounded-xl p-5 shadow-2xl relative">
         
         {/* Close button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-red-950/50 transition cursor-pointer"
+          className="absolute top-4 right-4 p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition cursor-pointer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </button>
 
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-red-950/80 border border-red-800/40 flex items-center justify-center text-red-500">
-            <Sparkles className="w-5 h-5" />
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="w-8 h-8 rounded-lg bg-red-600/10 border border-red-500/20 flex items-center justify-center text-red-500">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white">Modelos Prontos de Cotação de T.I</h3>
-            <p className="text-xs text-slate-400">
-              Carregue uma lista pronta de itens com preços, links e estoque pré-configurados
+            <h3 className="text-sm font-bold text-white">Modelos Prontos de Orçamento</h3>
+            <p className="text-[11px] text-zinc-400">
+              Escolha um cenário comum de T.I para carregar itens e justificativas automaticamente
             </p>
           </div>
         </div>
 
-        <div className="space-y-3 mt-4 max-h-[60vh] overflow-y-auto pr-1">
-          {QUOTE_PRESETS.map((preset, index) => (
+        <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
+          {QUOTE_PRESETS.map((preset) => (
             <div
-              key={index}
+              key={preset.label}
               onClick={() => handleApplyPreset(preset)}
-              className="group bg-[#1a0f12] hover:bg-[#241216] border border-red-950/80 hover:border-red-800/60 rounded-xl p-4 transition-all duration-200 cursor-pointer flex items-center justify-between gap-4"
+              className="bg-[#161822] hover:bg-[#1c1f2c] border border-zinc-800/80 hover:border-zinc-700 rounded-lg p-3.5 transition cursor-pointer group"
             >
-              <div>
-                <h4 className="text-sm font-bold text-white group-hover:text-red-400 transition">
-                  {preset.label}
+              <div className="flex items-center justify-between mb-1">
+                <h4 className="text-xs font-bold text-white group-hover:text-red-400 transition">
+                  {preset.title}
                 </h4>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {preset.description}
-                </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-900/40">
-                    {preset.items.length} itens incluídos
-                  </span>
-                  <span className="text-[10px] text-slate-400">
-                    Links e estoque configurados
-                  </span>
-                </div>
+                <ArrowRight className="w-3.5 h-3.5 text-zinc-500 group-hover:text-red-400 transition group-hover:translate-x-0.5" />
               </div>
 
-              <div className="w-8 h-8 rounded-lg bg-[#2b1216] group-hover:bg-red-600 text-red-400 group-hover:text-white flex items-center justify-center transition shrink-0">
-                <ArrowRight className="w-4 h-4" />
+              <p className="text-[11px] text-zinc-400 line-clamp-2 leading-relaxed mb-2">
+                {preset.justification}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-zinc-500">
+                <span className="bg-zinc-800 px-2 py-0.5 rounded text-zinc-300">
+                  {preset.items.length} itens inclusos
+                </span>
+                {preset.items.slice(0, 3).map((it) => (
+                  <span key={it.id} className="bg-zinc-900 border border-zinc-800 px-1.5 py-0.5 rounded text-zinc-400">
+                    {it.name.split(' ')[0]} {it.name.split(' ')[1] || ''}
+                  </span>
+                ))}
               </div>
             </div>
           ))}
-        </div>
-
-        <div className="mt-5 pt-3 border-t border-red-950/60 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-semibold text-slate-300 hover:text-white bg-[#1f1114] hover:bg-[#2a171b] rounded-lg transition cursor-pointer"
-          >
-            Fechar
-          </button>
         </div>
 
       </div>
