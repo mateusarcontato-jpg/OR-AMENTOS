@@ -52,7 +52,6 @@ export const ItemsManager: React.FC<ItemsManagerProps> = ({ items, onChangeItems
       category: 'Hardware & Peças',
       hasInStock: false,
       stockQuantity: 0,
-      quantityNeeded: 1,
       quantityToBuy: 1,
       unitPrice: 0,
       purchaseUrl: '',

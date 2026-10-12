@@ -7,7 +7,6 @@ export interface BudgetItem {
   category: string;
   hasInStock: boolean;
   stockQuantity: number;
-  quantityNeeded: number;
   quantityToBuy: number;
   unitPrice: number;
   purchaseUrl: string;

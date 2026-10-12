@@ -101,13 +101,13 @@ export function generateQuotePDF(quote: BudgetQuote): void {
 
   // --- Items Table ---
   const tableData = quote.items.map((item, index) => {
-    const subtotal = item.quantityToBuy * item.unitPrice;
+    const subtotal = (item.quantityToBuy || 0) * (item.unitPrice || 0);
     const stockStatus = item.hasInStock
-      ? `Sim (${item.stockQuantity} un em loja)`
-      : 'Não (0 un)';
+      ? `Sim (${item.stockQuantity || 0} un)`
+      : 'Não';
     
     // Shorten link for display but keep valid text
-    let linkDisplay = 'Sem link';
+    let linkDisplay = '-';
     if (item.purchaseUrl && item.purchaseUrl.trim()) {
       try {
         const urlObj = new URL(item.purchaseUrl.startsWith('http') ? item.purchaseUrl : `https://${item.purchaseUrl}`);
@@ -117,13 +117,17 @@ export function generateQuotePDF(quote: BudgetQuote): void {
       }
     }
 
+    const detailsParts = [item.category || 'Geral'];
+    if (item.supplier) detailsParts.push(`Loja: ${item.supplier}`);
+    if (item.notes) detailsParts.push(item.notes);
+    const itemDescription = `${item.name || 'Item sem nome'}\n${detailsParts.join(' • ')}`;
+
     return [
       (index + 1).toString(),
-      item.name || 'Item sem nome',
-      item.category || 'Geral',
+      itemDescription,
       stockStatus,
-      `${item.quantityToBuy} un`,
-      formatCurrency(item.unitPrice),
+      `${item.quantityToBuy || 0} un`,
+      formatCurrency(item.unitPrice || 0),
       formatCurrency(subtotal),
       linkDisplay,
     ];
@@ -131,7 +135,7 @@ export function generateQuotePDF(quote: BudgetQuote): void {
 
   autoTable(doc, {
     startY: currentY,
-    head: [['#', 'Item / Descrição', 'Categoria', 'Na Loja/Estoque?', 'Qtd Comprar', 'Vl. Unitário', 'Subtotal', 'Link de Compra']],
+    head: [['#', 'Equipamento / Especificação', 'Tem em Loja?', 'Qtd Comprar', 'Preço Unit.', 'Subtotal', 'Link de Compra']],
     body: tableData,
     theme: 'grid',
     headStyles: {
@@ -151,17 +155,16 @@ export function generateQuotePDF(quote: BudgetQuote): void {
     },
     columnStyles: {
       0: { halign: 'center', cellWidth: 8 },
-      1: { cellWidth: 'auto', fontStyle: 'bold' },
-      2: { cellWidth: 24, fontSize: 7.5 },
-      3: { cellWidth: 26, fontSize: 7.5, halign: 'center' },
-      4: { cellWidth: 18, halign: 'center', fontStyle: 'bold' },
-      5: { cellWidth: 22, halign: 'right' },
-      6: { cellWidth: 24, halign: 'right', fontStyle: 'bold' },
-      7: { cellWidth: 25, halign: 'center', textColor: [37, 99, 235] },
+      1: { cellWidth: 'auto' },
+      2: { cellWidth: 25, fontSize: 7.5, halign: 'center' },
+      3: { cellWidth: 20, halign: 'center', fontStyle: 'bold' },
+      4: { cellWidth: 24, halign: 'right' },
+      5: { cellWidth: 25, halign: 'right', fontStyle: 'bold' },
+      6: { cellWidth: 25, halign: 'center', textColor: [37, 99, 235] },
     },
     didDrawCell: (data) => {
       // Add clickable hyperlink on the last column (Link de Compra)
-      if (data.section === 'body' && data.column.index === 7) {
+      if (data.section === 'body' && data.column.index === 6) {
         const item = quote.items[data.row.index];
         if (item && item.purchaseUrl && item.purchaseUrl.trim()) {
           const fullUrl = item.purchaseUrl.startsWith('http') 
