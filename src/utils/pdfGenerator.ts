@@ -208,7 +208,7 @@ export function generateQuotePDF(quote: BudgetQuote): void {
   doc.setTextColor(80, 80, 80);
   doc.text(`Total de itens cadastrados: ${quote.items.length}`, 18, totalsY + 12);
   doc.text(`Itens disponíveis na loja/estoque: ${totalStockCount} un`, 18, totalsY + 17);
-  doc.text(`Itens necessários para compra: ${totalItemsCount} un`, 18, totalsY + 22);
+  doc.text(`Quantidade a comprar: ${totalItemsCount} un`, 18, totalsY + 22);
 
   // Right: Total Investment with Red Accent
   const rightBoxX = pageWidth - 94;

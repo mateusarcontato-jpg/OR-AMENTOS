@@ -49,10 +49,6 @@ export const Header: React.FC<HeaderProps> = ({
                   <span>T.I</span>
                   <span className="text-red-500 font-extrabold">ORÇAMENTOS</span>
                 </h1>
-                <span className="inline-flex items-center gap-1 text-[10px] font-mono px-1.5 py-0.2 rounded bg-zinc-800/80 text-zinc-400 border border-zinc-700/50">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Firebase
-                </span>
               </div>
             </div>
           </div>

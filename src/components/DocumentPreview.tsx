@@ -172,8 +172,7 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                     <th className="py-2 px-2.5 w-8 text-center">#</th>
                     <th className="py-2 px-3">Equipamento / Especificação</th>
                     <th className="py-2 px-2.5 text-center">Tem em Loja?</th>
-                    <th className="py-2 px-2 text-center">Necessário</th>
-                    <th className="py-2 px-2 text-center">Comprar</th>
+                    <th className="py-2 px-2 text-center">Qtd Comprar</th>
                     <th className="py-2 px-2.5 text-right">Preço Unit.</th>
                     <th className="py-2 px-3 text-right">Subtotal</th>
                   </tr>
@@ -222,11 +221,6 @@ export const DocumentPreview: React.FC<DocumentPreviewProps> = ({
                           ) : (
                             <span className="text-zinc-400 text-[10px]">Não</span>
                           )}
-                        </td>
-
-                        {/* Needed */}
-                        <td className="py-2.5 px-2 text-center font-mono text-zinc-600">
-                          {item.quantityNeeded || 1}
                         </td>
 
                         {/* To Buy */}
